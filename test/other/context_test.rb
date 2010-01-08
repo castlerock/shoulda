@@ -87,6 +87,56 @@ class ContextTest < ActiveSupport::TestCase # :nodoc:
       assert_match(/^test: context with method definition/, self.to_s)
     end
   end
+
+  @@once_run_count = 0
+  context "should run setup once if specified" do 
+    setup(:once) do 
+      puts "********** Running me ********** "
+      @kind = "Aragorn"
+      @@once_run_count += 1
+    end
+    should "do this once " do 
+      assert_equal 1, @@once_run_count
+      assert_equal "Aragorn", @kind
+    end
+
+    should "run this also once more" do
+      assert_equal 1, @@once_run_count
+      assert_equal "Aragorn", @kind
+    end
+    
+    context "For subcontext" do 
+      should "not run in subcontext" do
+        assert_equal "Aragorn", @kind
+        assert_equal 1, @@once_run_count
+      end
+    end
+  end # end of @@once_run_count
+
+  @@many_run_count = 0
+  context "should run manytimes if specified" do 
+    setup do 
+      @king = "Aragorn"
+      @@many_run_count += 1
+    end
+
+    should "do this" do
+      assert_equal "Aragorn", @king
+    end
+    
+    should "run this also second time" do
+      assert_equal "Aragorn", @king
+    end
+
+    context "For subcontext" do 
+      should "run manytimes in subcontext" do
+        assert_equal "Aragorn", @king
+      end
+    end
+
+  end
+
+
   
   context "another context" do
     should "not define @blah" do

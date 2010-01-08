@@ -270,6 +270,47 @@ module Shoulda
     end
   end
 
+  class Setup
+    def initialize(can_run_count,&blk)
+      @ran_already = false
+      @can_run_count = (can_run_count == :once ? 1 : 10)
+      @blk = blk
+      @ivars = {}
+    end
+    
+    def run(binding)
+      if can_ran?
+        before_ivars = binding.instance_variables
+        @blk.bind(binding).call
+        after_ivars = binding.instance_variables
+        capture_ivars(before_ivars,after_ivars,binding) if @can_run_count == 1
+        @ran_already = true
+      else
+        copy_ivars(binding)
+      end
+    end
+
+    
+    private
+    def can_ran?
+      return false if(@ran_already && @can_run_count == 1)
+      return true
+    end
+    def copy_ivars(binding)
+      @ivars.each do |name,value|
+        binding.instance_variable_set(name,value)
+      end
+    end
+
+    def capture_ivars(before_ivars,after_ivars,binding)
+      added_ivars = after_ivars - before_ivars
+      added_ivars.each { |var_name| 
+        @ivars[var_name] = binding.instance_variable_get(var_name)
+      }
+    end
+  end
+
+
   class Context # :nodoc:
 
     attr_accessor :name               # my name
@@ -303,8 +344,8 @@ module Shoulda
       self.subcontexts << Context.new(name, self, &blk)
     end
 
-    def setup(&blk)
-      self.setup_blocks << blk
+    def setup(count = :each,&blk)
+      self.setup_blocks << Setup.new(count,&blk)
     end
 
     def teardown(&blk)
@@ -377,7 +418,8 @@ module Shoulda
 
     def run_current_setup_blocks(binding)
       setup_blocks.each do |setup_block|
-        setup_block.bind(binding).call
+        setup_block.run(binding)
+        #setup_block.bind(binding).call
       end
     end
 
