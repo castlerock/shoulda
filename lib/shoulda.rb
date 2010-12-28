@@ -1,9 +1,9 @@
-module Shoulda
-  VERSION = "2.10.2"
-end
+require 'shoulda/version'
 
-if defined? Spec
-  require 'shoulda/rspec'
+if defined?(RSpec)
+  require 'shoulda/integrations/rspec2'
+elsif defined?(Spec)
+  require 'shoulda/integrations/rspec'
 else
-  require 'shoulda/test_unit'
+  require 'shoulda/integrations/test_unit'
 end

@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), '..', '..', 'test_helper')
+require 'test_helper'
 
 class AssignToMatcherTest < ActionController::TestCase # :nodoc:
 
@@ -29,6 +29,26 @@ class AssignToMatcherTest < ActionController::TestCase # :nodoc:
 
     should "reject assigning to another variable" do
       assert_rejects assign_to(:other), @controller
+    end
+
+    should "accept assigning to the same value in the test context" do
+      @expected = 'value'
+      assert_accepts assign_to(:var).with { @expected }, @controller
+    end
+
+    should "reject assigning to the another value in the test context" do
+      @expected = 'other'
+      assert_rejects assign_to(:var).with { @expected }, @controller
+    end
+  end
+
+  context "a controller that assigns a nil value to an instance variable" do
+    setup do
+      @controller = build_response { @var = nil }
+    end
+
+    should "accept assigning to that variable" do
+      assert_accepts assign_to(:var), @controller
     end
   end
 

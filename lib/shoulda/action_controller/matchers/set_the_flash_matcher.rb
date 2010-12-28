@@ -10,6 +10,7 @@ module Shoulda # :nodoc:
       #   it { should set_the_flash }
       #   it { should set_the_flash.to("Thank you for placing this order.") }
       #   it { should set_the_flash.to(/created/i) }
+      #   it { should set_the_flash.to(/logged in/i).now }
       #   it { should_not set_the_flash }
       def set_the_flash
         SetTheFlashMatcher.new
@@ -19,6 +20,11 @@ module Shoulda # :nodoc:
 
         def to(value)
           @value = value
+          self
+        end
+
+        def now
+          @now = true
           self
         end
 
@@ -60,11 +66,20 @@ module Shoulda # :nodoc:
         end
 
         def flash
-          @controller.response.session['flash']
+          return @flash if @flash
+          flash_and_now = @controller.request.session["flash"].dup if @controller.request.session["flash"]
+          flash         = @controller.send(:flash)
+
+          @flash = if @now
+            flash.keys.each {|key| flash_and_now.delete(key) }
+            flash_and_now
+          else
+            flash
+          end
         end
 
         def expectation
-          expectation = "the flash to be set"
+          expectation = "the flash#{".now" if @now} to be set"
           expectation << " to #{@value.inspect}" unless @value.nil?
           expectation << ", but #{flash_description}"
           expectation

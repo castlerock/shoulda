@@ -22,7 +22,8 @@ module Shoulda # :nodoc:
       class AssignToMatcher # :nodoc:
 
         def initialize(variable)
-          @variable = variable.to_s
+          @variable    = variable.to_s
+          @check_value = false
         end
 
         def with_kind_of(expected_class)
@@ -30,13 +31,16 @@ module Shoulda # :nodoc:
           self
         end
 
-        def with(expected_value)
-          @expected_value = expected_value
+        def with(expected_value = nil, &block)
+          @check_value       = true
+          @expected_value    = expected_value
+          @expectation_block = block
           self
         end
 
         def matches?(controller)
           @controller = controller
+          @expected_value = @context.instance_eval(&@expectation_block) if @expectation_block
           assigned_value? && kind_of_expected_class? && equal_to_expected_value?
         end
 
@@ -48,15 +52,20 @@ module Shoulda # :nodoc:
           description
         end
 
+        def in_context(context)
+          @context = context
+          self
+        end
+
         private
 
         def assigned_value?
-          if assigned_value.nil?
+          if !@controller.instance_variables.include?("@#{@variable}")
             @failure_message =
               "Expected action to assign a value for @#{@variable}"
             false
           else
-            @negative_failure_message = 
+            @negative_failure_message =
               "Didn't expect action to assign a value for @#{@variable}, " <<
               "but it was assigned to #{assigned_value.inspect}"
             true
@@ -80,7 +89,7 @@ module Shoulda # :nodoc:
         end
 
         def equal_to_expected_value?
-          return true unless @expected_value
+          return true unless @check_value
           if @expected_value == assigned_value
             @negative_failure_message =
               "Didn't expect action to assign #{@expected_value.inspect} " <<
@@ -95,11 +104,7 @@ module Shoulda # :nodoc:
         end
 
         def assigned_value
-          assigns[@variable]
-        end
-
-        def assigns
-          @controller.response.template.assigns 
+          @controller.instance_variable_get("@#{@variable}")
         end
 
       end

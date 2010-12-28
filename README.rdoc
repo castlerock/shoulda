@@ -1,15 +1,63 @@
 = Shoulda - Making tests easy on the fingers and eyes
 
-Shoulda makes it easy to write elegant, understandable, and maintainable tests.  Shoulda consists of test macros, assertions, and helpers added on to the Test::Unit framework.  It's fully compatible with your existing tests, and requires no retooling to use.
+Shoulda makes it easy to write elegant, understandable, and maintainable tests. Shoulda consists of matchers, test helpers, and assertions. It's fully compatible with your existing tests in Test::Unit or RSpec, and requires no retooling to use.
 
-Helpers:: #context and #should give you RSpec like test blocks.
+Matchers:: Test::Unit- and RSpec-compatible one-liners that test common Rails functionality.
+           These tests would otherwise be much longer, more complex, and error-prone.
+Helpers:: #context and #should give you RSpec like test blocks in Test::Unit.
           In addition, you get nested contexts and a much more readable syntax.
-Macros:: Generate hundreds of lines of Controller and ActiveRecord tests with these powerful macros.
-         They get you started quickly, and can help you ensure that your application is conforming to best practices.
-Assertions:: Many common rails testing idioms have been distilled into a set of useful assertions.
-Matchers:: Rspec-compatible matchers providing the same tests as Shoulda macros.
+Assertions:: Many common Rails testing idioms have been distilled into a set of useful assertions.
 
 = Usage
+
+=== ActiveRecord Tests (Shoulda::ActiveRecord::Matchers)
+
+Test your ActiveRecord associations and validations with these powerful matchers:
+
+  class PostTest < Test::Unit::TestCase
+    should belong_to(:user)
+    should have_many(:tags).through(:taggings)
+
+    should validate_uniqueness_of(:title)
+    should validate_presence_of(:body).with_message(/wtf/)
+    should validate_presence_of(:title)
+    should validate_numericality_of(:user_id)
+  end
+
+  class UserTest < Test::Unit::TestCase
+    should have_many(:posts)
+
+    should_not allow_value("blah").for(:email)
+    should_not allow_value("b lah").for(:email)
+    should allow_value("a@b.com").for(:email)
+    should allow_value("asdf@asdf.com").for(:email)
+    should ensure_inclusion_of(:email).in_range(1..100)
+    should ensure_inclusion_of(:age).in_range(1..100)
+    should_not allow_mass_assignment_of(:password)
+  end
+
+Makes TDD so much easier.
+
+=== Controller Tests (Shoulda::Controller::Matchers)
+
+Matchers to test the most common controller patterns...
+
+  class PostsControllerTest < ActionController::TestCase
+    context "on GET to :show for first record" do
+      setup do
+        get :show, :id => 1
+      end
+
+      should assign_to(:user)
+      should respond_with(:success)
+      should render_template(:show)
+      should_not set_the_flash
+
+      should "do something else really cool" do
+        assert_equal 1, assigns(:user).id
+      end
+    end
+  end
 
 === Context Helpers (Shoulda::Context)
 
@@ -44,55 +92,6 @@ Produces the following test methods:
 
 So readable!
 
-=== ActiveRecord Tests (Shoulda::ActiveRecord::Macros)
-
-Quick macro tests for your ActiveRecord associations and validations:
-
-  class PostTest < Test::Unit::TestCase
-    fixtures :all
-
-    should_belong_to :user
-    should_have_many :tags, :through => :taggings
-
-    should_validate_uniqueness_of :title
-    should_validate_presence_of :body, :message => /wtf/
-    should_validate_presence_of :title
-    should_validate_numericality_of :user_id
-  end
-
-  class UserTest < Test::Unit::TestCase
-    should_have_many :posts
-
-    should_not_allow_values_for :email, "blah", "b lah"
-    should_allow_values_for :email, "a@b.com", "asdf@asdf.com"
-    should_ensure_length_in_range :email, 1..100
-    should_ensure_value_in_range :age, 1..100
-    should_not_allow_mass_assignment_of :password
-  end
-
-Makes TDD so much easier.
-
-=== Controller Tests (Shoulda::Controller::Macros)
-
-Macros to test the most common controller patterns...
-  
-  class PostsControllerTest < ActionController::TestCase
-    context "on GET to :show for first record" do
-      setup do
-        get :show, :id => 1
-      end
-
-      should_assign_to :user
-      should_respond_with :success
-      should_render_template :show
-      should_not_set_the_flash
-
-      should "do something else really cool" do
-        assert_equal 1, assigns(:user).id
-      end
-    end
-  end
-  
 === Helpful Assertions (Shoulda::Assertions)
 
 More to come here, but have fun with what's there.
@@ -101,26 +100,12 @@ More to come here, but have fun with what's there.
   assert_contains(['a', '1'], /\d/)
   assert_contains(['a', '1'], 'a')
 
-=== 3rd Party and Application Specific Macros
-
-Any *.rb file under RAILS_ROOT/test/shoulda_macros/ or vendor/(plugins|gems)/gem_name/shoulda_macros/ will be automatically required when you run your tests.  This allows you to distribute macros with your plugins, or to organize the macros inside your application.  Remember to add your macro to Test::Unit::TestCase in the macro file:
-
-  # test/shoulda_macros/security.rb
-  class Test::Unit::TestCase
-    def self.should_be_denied(opts = {})
-      should_set_the_flash_to(opts[:flash] || /Please log in/i)
-      should_redirect_to(opts[:redirect]   || 'login_url')
-    end
-  end
-
 = Rails Installation (Test::Unit)
 
-=== As a Gem
-
-Use this if you prefer to use versioned releases of shoulda.  Specify the gem dependency in your config/environment.rb file:
+Specify the gem dependency in your config/environment.rb file:
 
   Rails::Initializer.run do |config|
-    config.gem "thoughtbot-shoulda", :lib => "shoulda", :source => "http://gems.github.com"
+    config.gem "shoulda", :lib => "shoulda"
   end
 
 Then:
@@ -128,29 +113,15 @@ Then:
   $ rake gems:install
   $ rake gems:unpack
 
-=== As a Plugin
-
-Use this if you prefer to use the edge version of shoulda:
-
-  $ script/plugin install git://github.com/thoughtbot/shoulda.git
-
-=== As a Plugin (using git submodules)
-
-Use this if you prefer the idea of being able to easily switch between using edge or a tagged version of shoulda:
-
-  $ git submodule add git://github.com/thoughtbot/shoulda.git vendor/plugins/shoulda
-
 = Rails Installation (RSpec)
 
 If you're using Shoulda with RSpec, we recommend that you add config.gem lines
 for RSpec and Shoulda in your config/environment/test.rb file, but do not ask
 Rails to load the RSpec and Shoulda libraries:
 
-  config.gem 'rspec', :lib => false
+  config.gem 'rspec',       :lib => false
   config.gem 'rspec-rails', :lib => false
-  config.gem 'thoughtbot-shoulda',
-             :lib => false,
-             :source => 'http://gems.github.com'
+  config.gem 'shoulda',     :lib => false
 
 Then require shoulda from your spec/spec_helper.rb file, before Spec::Runner is
 configured:
@@ -162,10 +133,22 @@ configured:
 
 You should not need to require anything besides the top-level shoulda library.
 
+= Rails 3 Installation (RSpec)
+
+With Rails 3 and Bundler, requiring Shoulda is as easy as adding it to your Gemfile:
+
+  group :test do
+    gem "shoulda"
+    gem "rspec-rails", "2.0.0.beta.12"
+  end
+
+Shoulda will automatically include matchers into the appropriate example
+groups.
+
 = Credits
 
-Shoulda is maintained by {Tammer Saleh}[mailto:tsaleh@thoughtbot.com], and is funded by Thoughtbot[http://www.thoughtbot.com], inc.
+Shoulda is maintained and funded by {thoughtbot}[http://thoughtbot.com/community]
 
 = License
 
-Shoulda is Copyright © 2006-2008 Tammer Saleh, Thoughtbot. It is free software, and may be redistributed under the terms specified in the MIT-LICENSE file.
+Shoulda is Copyright © 2006-2010 Tammer Saleh, Thoughtbot. It is free software, and may be redistributed under the terms specified in the MIT-LICENSE file.

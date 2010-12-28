@@ -25,4 +25,10 @@ module ActionController #:nodoc: all
   end
 end
 
-
+if defined?(ActionController::TestCase)
+  class ActionController::TestCase
+    def subject
+      @controller
+    end
+  end
+end

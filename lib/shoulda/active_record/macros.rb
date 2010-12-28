@@ -23,6 +23,8 @@ module Shoulda # :nodoc:
       include Helpers
       include Matchers
 
+      # Deprecated: use ActiveRecord::Matchers#validate_presence_of instead.
+      #
       # Ensures that the model cannot be saved if one of the attributes listed is not present.
       #
       # Options:
@@ -33,21 +35,20 @@ module Shoulda # :nodoc:
       #   should_validate_presence_of :name, :phone_number
       #
       def should_validate_presence_of(*attributes)
+        ::ActiveSupport::Deprecation.warn("use: should validate_presence_of")
         message = get_options!(attributes, :message)
 
         attributes.each do |attribute|
-          matcher = validate_presence_of(attribute).with_message(message)
-          should matcher.description do
-            assert_accepts(matcher, subject)
-          end
+          should validate_presence_of(attribute).with_message(message)
         end
       end
-      
+
+      # Deprecated: use ActiveRecord::Matchers#validate_uniqueness_of instead.
+      #
       # Ensures that the model cannot be saved if one of the attributes listed is not unique.
       # Requires an existing record
       #
       # Options:
-
       # * <tt>:message</tt> - value the test expects to find in <tt>errors.on(:attribute)</tt>.
       #   Regexp or string.  Default = <tt>I18n.translate('activerecord.errors.messages.taken')</tt>
       # * <tt>:scoped_to</tt> - field(s) to scope the uniqueness to.
@@ -62,6 +63,7 @@ module Shoulda # :nodoc:
       #   should_validate_uniqueness_of :email, :case_sensitive => false
       #
       def should_validate_uniqueness_of(*attributes)
+        ::ActiveSupport::Deprecation.warn("use: should validate_uniqueness_of")
         message, scope, case_sensitive = get_options!(attributes, :message, :scoped_to, :case_sensitive)
         scope = [*scope].compact
         case_sensitive = true if case_sensitive.nil?
@@ -70,57 +72,57 @@ module Shoulda # :nodoc:
           matcher = validate_uniqueness_of(attribute).
             with_message(message).scoped_to(scope)
           matcher = matcher.case_insensitive unless case_sensitive
-          should matcher.description do
-            assert_accepts(matcher, subject)
-          end
+          should matcher
         end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#allow_mass_assignment_of instead.
+      #
       # Ensures that the attribute can be set on mass update.
       #
       #   should_allow_mass_assignment_of :first_name, :last_name
       #
       def should_allow_mass_assignment_of(*attributes)
+        ::ActiveSupport::Deprecation.warn("use: should allow_mass_assignment_of")
         get_options!(attributes)
 
         attributes.each do |attribute|
-          matcher = allow_mass_assignment_of(attribute)
-          should matcher.description do
-            assert_accepts matcher, subject
-          end
+          should allow_mass_assignment_of(attribute)
         end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#allow_mass_assignment_of instead.
+      #
       # Ensures that the attribute cannot be set on mass update.
       #
       #   should_not_allow_mass_assignment_of :password, :admin_flag
       #
       def should_not_allow_mass_assignment_of(*attributes)
+        ::ActiveSupport::Deprecation.warn("use: should_not allow_mass_assignment_of")
         get_options!(attributes)
 
         attributes.each do |attribute|
-          matcher = allow_mass_assignment_of(attribute)
-          should "not #{matcher.description}" do
-            assert_rejects matcher, subject
-          end
+          should_not allow_mass_assignment_of(attribute)
         end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#have_readonly_attribute instead.
+      #
       # Ensures that the attribute cannot be changed once the record has been created.
       #
       #   should_have_readonly_attributes :password, :admin_flag
       #
       def should_have_readonly_attributes(*attributes)
+        ::ActiveSupport::Deprecation.warn("use: should have_readonly_attribute")
         get_options!(attributes)
 
         attributes.each do |attribute|
-          matcher = have_readonly_attribute(attribute)
-          should matcher.description do
-            assert_accepts matcher, subject
-          end
+          should have_readonly_attribute(attribute)
         end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#allow_value instead.
+      #
       # Ensures that the attribute cannot be set to the given values
       #
       # Options:
@@ -132,30 +134,30 @@ module Shoulda # :nodoc:
       #   should_not_allow_values_for :isbn, "bad 1", "bad 2"
       #
       def should_not_allow_values_for(attribute, *bad_values)
+        ::ActiveSupport::Deprecation.warn("use: should_not allow_value")
         message = get_options!(bad_values, :message)
         bad_values.each do |value|
-          matcher = allow_value(value).for(attribute).with_message(message)
-          should "not #{matcher.description}" do
-            assert_rejects matcher, subject
-          end
+          should_not allow_value(value).for(attribute).with_message(message)
         end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#allow_value instead.
+      #
       # Ensures that the attribute can be set to the given values.
       #
       # Example:
       #   should_allow_values_for :isbn, "isbn 1 2345 6789 0", "ISBN 1-2345-6789-0"
       #
       def should_allow_values_for(attribute, *good_values)
+        ::ActiveSupport::Deprecation.warn("use: should allow_value")
         get_options!(good_values)
         good_values.each do |value|
-          matcher = allow_value(value).for(attribute)
-          should matcher.description do
-            assert_accepts matcher, subject
-          end
+          should allow_value(value).for(attribute)
         end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#ensure_length_of instead.
+      #
       # Ensures that the length of the attribute is in the given range
       #
       # Options:
@@ -168,20 +170,19 @@ module Shoulda # :nodoc:
       #   should_ensure_length_in_range :password, (6..20)
       #
       def should_ensure_length_in_range(attribute, range, opts = {})
-        short_message, long_message = get_options!([opts], 
+        ::ActiveSupport::Deprecation.warn("use: should ensure_length_of.is_at_least.is_at_most")
+        short_message, long_message = get_options!([opts],
                                                    :short_message,
                                                    :long_message)
-        matcher = ensure_length_of(attribute).
+        should ensure_length_of(attribute).
           is_at_least(range.first).
           with_short_message(short_message).
           is_at_most(range.last).
           with_long_message(long_message)
-
-        should matcher.description do
-          assert_accepts matcher, subject
-        end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#ensure_length_of instead.
+      #
       # Ensures that the length of the attribute is at least a certain length
       #
       # Options:
@@ -192,17 +193,16 @@ module Shoulda # :nodoc:
       #   should_ensure_length_at_least :name, 3
       #
       def should_ensure_length_at_least(attribute, min_length, opts = {})
+        ::ActiveSupport::Deprecation.warn("use: should ensure_length_of.is_at_least")
         short_message = get_options!([opts], :short_message)
 
-        matcher = ensure_length_of(attribute).
+        should ensure_length_of(attribute).
           is_at_least(min_length).
           with_short_message(short_message)
-
-        should matcher.description do
-          assert_accepts matcher, subject
-        end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#ensure_length_of instead.
+      #
       # Ensures that the length of the attribute is exactly a certain length
       #
       # Options:
@@ -213,16 +213,15 @@ module Shoulda # :nodoc:
       #   should_ensure_length_is :ssn, 9
       #
       def should_ensure_length_is(attribute, length, opts = {})
+        ::ActiveSupport::Deprecation.warn("use: should ensure_length_of.is_equal_to")
         message = get_options!([opts], :message)
-        matcher = ensure_length_of(attribute).
+        should ensure_length_of(attribute).
           is_equal_to(length).
           with_message(message)
-
-        should matcher.description do
-          assert_accepts matcher, subject
-        end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#ensure_inclusion_of instead.
+      #
       # Ensure that the attribute is in the range specified
       #
       # Options:
@@ -235,20 +234,20 @@ module Shoulda # :nodoc:
       #   should_ensure_value_in_range :age, (0..100)
       #
       def should_ensure_value_in_range(attribute, range, opts = {})
+        ::ActiveSupport::Deprecation.warn("use: should ensure_inclusion_of.in_range")
         message, low_message, high_message = get_options!([opts],
                                                           :message,
                                                           :low_message,
                                                           :high_message)
-        matcher = ensure_inclusion_of(attribute).
+        should ensure_inclusion_of(attribute).
           in_range(range).
           with_message(message).
           with_low_message(low_message).
           with_high_message(high_message)
-        should matcher.description do
-          assert_accepts matcher, subject
-        end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#validate_numericality_of instead.
+      #
       # Ensure that the attribute is numeric
       #
       # Options:
@@ -259,16 +258,16 @@ module Shoulda # :nodoc:
       #   should_validate_numericality_of :age
       #
       def should_validate_numericality_of(*attributes)
+        ::ActiveSupport::Deprecation.warn("use: should validate_numericality_of")
         message = get_options!(attributes, :message)
         attributes.each do |attribute|
-          matcher = validate_numericality_of(attribute).
+          should validate_numericality_of(attribute).
             with_message(message)
-          should matcher.description do
-            assert_accepts matcher, subject
-          end
         end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#have_many instead.
+      #
       # Ensures that the has_many relationship exists.  Will also test that the
       # associated table has the required columns.  Works with polymorphic
       # associations.
@@ -283,15 +282,15 @@ module Shoulda # :nodoc:
       #   should_have_many :enemies, :dependent => :destroy
       #
       def should_have_many(*associations)
+        ::ActiveSupport::Deprecation.warn("use: should have_many")
         through, dependent = get_options!(associations, :through, :dependent)
         associations.each do |association|
-          matcher = have_many(association).through(through).dependent(dependent)
-          should matcher.description do
-            assert_accepts(matcher, subject)
-          end
+          should have_many(association).through(through).dependent(dependent)
         end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#have_one instead.
+      #
       # Ensure that the has_one relationship exists.  Will also test that the
       # associated table has the required columns.  Works with polymorphic
       # associations.
@@ -303,50 +302,51 @@ module Shoulda # :nodoc:
       #   should_have_one :god # unless hindu
       #
       def should_have_one(*associations)
+        ::ActiveSupport::Deprecation.warn("use: should have_one")
         dependent, through = get_options!(associations, :dependent, :through)
         associations.each do |association|
-          matcher = have_one(association).dependent(dependent).through(through)
-          should matcher.description do
-            assert_accepts(matcher, subject)
-          end
+          should have_one(association).dependent(dependent).through(through)
         end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#have_and_belong_to_many instead.
+      #
       # Ensures that the has_and_belongs_to_many relationship exists, and that the join
       # table is in place.
       #
       #   should_have_and_belong_to_many :posts, :cars
       #
       def should_have_and_belong_to_many(*associations)
+        ::ActiveSupport::Deprecation.warn("use: should have_and_belong_to_many")
         get_options!(associations)
 
         associations.each do |association|
-          matcher = have_and_belong_to_many(association)
-          should matcher.description do
-            assert_accepts(matcher, subject)
-          end
+          should have_and_belong_to_many(association)
         end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#belong_to instead.
+      #
       # Ensure that the belongs_to relationship exists.
       #
       #   should_belong_to :parent
       #
       def should_belong_to(*associations)
+        ::ActiveSupport::Deprecation.warn("use: should belong_to")
         dependent = get_options!(associations, :dependent)
         associations.each do |association|
-          matcher = belong_to(association).dependent(dependent)
-          should matcher.description do
-            assert_accepts(matcher, subject)
-          end
+          should belong_to(association).dependent(dependent)
         end
       end
 
+      # Deprecated.
+      #
       # Ensure that the given class methods are defined on the model.
       #
       #   should_have_class_methods :find, :destroy
       #
       def should_have_class_methods(*methods)
+        ::ActiveSupport::Deprecation.warn
         get_options!(methods)
         klass = described_type
         methods.each do |method|
@@ -356,11 +356,14 @@ module Shoulda # :nodoc:
         end
       end
 
+      # Deprecated.
+      #
       # Ensure that the given instance methods are defined on the model.
       #
       #   should_have_instance_methods :email, :name, :name=
       #
       def should_have_instance_methods(*methods)
+        ::ActiveSupport::Deprecation.warn
         get_options!(methods)
         klass = described_type
         methods.each do |method|
@@ -370,9 +373,11 @@ module Shoulda # :nodoc:
         end
       end
 
+      # Deprecated: use ActiveRecord::Matchers#have_db_column instead.
+      #
       # Ensure that the given columns are defined on the models backing SQL table.
       # Also aliased to should_have_db_column for readability.
-      # Takes the same options available in migrations: 
+      # Takes the same options available in migrations:
       # :type, :precision, :limit, :default, :null, and :scale
       #
       # Examples:
@@ -384,23 +389,23 @@ module Shoulda # :nodoc:
       #   should_have_db_column :admin,  :default => false, :null => false
       #
       def should_have_db_columns(*columns)
-        column_type, precision, limit, default, null, scale, sql_type = 
+        ::ActiveSupport::Deprecation.warn("use: should have_db_column")
+        column_type, precision, limit, default, null, scale, sql_type =
           get_options!(columns, :type, :precision, :limit,
                                 :default, :null, :scale, :sql_type)
         columns.each do |name|
-          matcher = have_db_column(name).
+          should have_db_column(name).
                       of_type(column_type).
                       with_options(:precision => precision, :limit    => limit,
                                    :default   => default,   :null     => null,
                                    :scale     => scale,     :sql_type => sql_type)
-          should matcher.description do
-            assert_accepts(matcher, subject)
-          end
         end
       end
-      
+
       alias_method :should_have_db_column, :should_have_db_columns
 
+      # Deprecated: use ActiveRecord::Matchers#have_db_index instead.
+      #
       # Ensures that there are DB indices on the given columns or tuples of columns.
       # Also aliased to should_have_db_index for readability
       #
@@ -418,32 +423,18 @@ module Shoulda # :nodoc:
       #   should_have_db_index :ssn, :unique => true
       #
       def should_have_db_indices(*columns)
+        ::ActiveSupport::Deprecation.warn("use: should have_db_index")
         unique = get_options!(columns, :unique)
-        
+
         columns.each do |column|
-          matcher = have_db_index(column).unique(unique)
-          should matcher.description do
-            assert_accepts(matcher, subject)
-          end
+          should have_db_index(column).unique(unique)
         end
       end
 
       alias_method :should_have_db_index, :should_have_db_indices
 
-      # Deprecated. See should_have_db_index
-      def should_have_index(*args)
-        warn "[DEPRECATION] should_have_index is deprecated. " <<
-             "Use should_have_db_index instead."
-        should_have_db_index(*args)
-      end
-
-      # Deprecated. See should_have_db_indices
-      def should_have_indices(*args)
-        warn "[DEPRECATION] should_have_indices is deprecated. " <<
-             "Use should_have_db_indices instead."
-        should_have_db_indices(*args)
-      end
-
+      # Deprecated: use ActiveRecord::Matchers#validate_acceptance_of instead.
+      #
       # Ensures that the model cannot be saved if one of the attributes listed is not accepted.
       #
       # Options:
@@ -454,57 +445,11 @@ module Shoulda # :nodoc:
       #   should_validate_acceptance_of :eula
       #
       def should_validate_acceptance_of(*attributes)
+        ::ActiveSupport::Deprecation.warn("use: should validate_acceptance_of")
         message = get_options!(attributes, :message)
 
         attributes.each do |attribute|
-          matcher = validate_acceptance_of(attribute).with_message(message)
-          should matcher.description do
-            assert_accepts matcher, subject
-          end
-        end
-      end
-
-      # Deprecated.
-      #
-      # Ensures that the model has a method named scope_name that returns a NamedScope object with the
-      # proxy options set to the options you supply.  scope_name can be either a symbol, or a method
-      # call which will be evaled against the model.  The eval'd method call has access to all the same
-      # instance variables that a should statement would.
-      #
-      # Options: Any of the options that the named scope would pass on to find.
-      #
-      # Example:
-      #
-      #   should_have_named_scope :visible, :conditions => {:visible => true}
-      #
-      # Passes for
-      #
-      #   named_scope :visible, :conditions => {:visible => true}
-      #
-      # Or for
-      #
-      #   def self.visible
-      #     scoped(:conditions => {:visible => true})
-      #   end
-      #
-      # You can test lambdas or methods that return ActiveRecord#scoped calls:
-      #
-      #   should_have_named_scope 'recent(5)', :limit => 5
-      #   should_have_named_scope 'recent(1)', :limit => 1
-      #
-      # Passes for
-      #   named_scope :recent, lambda {|c| {:limit => c}}
-      #
-      # Or for
-      #
-      #   def self.recent(c)
-      #     scoped(:limit => c)
-      #   end
-      #
-      def should_have_named_scope(scope_call, find_options = nil)
-        matcher = have_named_scope(scope_call).finding(find_options)
-        should matcher.description do
-          assert_accepts matcher.in_context(self), subject
+          should validate_acceptance_of(attribute).with_message(message)
         end
       end
     end

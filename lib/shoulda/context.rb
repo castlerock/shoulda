@@ -21,9 +21,10 @@ module Shoulda
   module ClassMethods
     # == Should statements
     #
-    # Should statements are just syntactic sugar over normal Test::Unit test methods.  A should block
-    # contains all the normal code and assertions you're used to seeing, with the added benefit that
-    # they can be wrapped inside context blocks (see below).
+    # Should statements are just syntactic sugar over normal Test::Unit test
+    # methods.  A should block contains all the normal code and assertions
+    # you're used to seeing, with the added benefit that they can be wrapped
+    # inside context blocks (see below).
     #
     # === Example:
     #
@@ -56,14 +57,43 @@ module Shoulda
     #      assert true
     #    end
     #  end
+    #
+    # Should statements can also wrap matchers, making virtually any matcher
+    # usable in a macro style. The matcher's description is used to generate a
+    # test name and failure message, and the test will pass if the matcher
+    # matches the subject.
+    #
+    # === Example:
+    #
+    #   should validate_presence_of(:first_name).with_message(/gotta be there/)
+    #
 
-    def should(name, options = {}, &blk)
+    def should(name_or_matcher, options = {}, &blk)
       if Shoulda.current_context
-        block_given? ? Shoulda.current_context.should(name, options, &blk) : Shoulda.current_context.should_eventually(name)
+        Shoulda.current_context.should(name_or_matcher, options, &blk)
       else
         context_name = self.name.gsub(/Test/, "")
         context = Shoulda::Context.new(context_name, self) do
-          block_given? ? should(name, options, &blk) : should_eventually(name)
+          should(name_or_matcher, options, &blk)
+        end
+        context.build
+      end
+    end
+
+    # Allows negative tests using matchers. The matcher's description is used
+    # to generate a test name and negative failure message, and the test will
+    # pass unless the matcher matches the subject.
+    #
+    # === Example:
+    #
+    #   should_not set_the_flash
+    def should_not(matcher)
+      if Shoulda.current_context
+        Shoulda.current_context.should_not(matcher)
+      else
+        context_name = self.name.gsub(/Test/, "")
+        context = Shoulda::Context.new(context_name, self) do
+          should_not(matcher)
         end
         context.build
       end
@@ -86,7 +116,7 @@ module Shoulda
     #      context "on GET" do
     #        setup { get :index }
     #
-    #        should_respond_with :success
+    #        should respond_with(:success)
     #
     #        # runs before "get :index"
     #        before_should "find all users" do
@@ -185,7 +215,7 @@ module Shoulda
     #     subject { User.first }
     #
     #     # uses the existing user
-    #     should_validate_uniqueness_of :email
+    #     should validate_uniqueness_of(:email)
     #   end
     def subject(&block)
       @subject_block = block
@@ -214,19 +244,6 @@ module Shoulda
     #     end
     #   end
     #
-    # If an instance variable exists named after the described class, that
-    # instance variable will be used as the subject. This behavior is
-    # deprecated, and will be removed in a future version of Shoulda. The
-    # recommended approach for using a different subject is to use the subject
-    # class method.
-    #
-    #   class UserTest
-    #     should "be the existing user" do
-    #       @user = User.new
-    #       assert_equal @user, subject # passes
-    #     end
-    #   end
-    #
     # The subject is used by all macros that require an instance of the class
     # being tested.
     def subject
@@ -239,17 +256,7 @@ module Shoulda
 
     def get_instance_of(object_or_klass) # :nodoc:
       if object_or_klass.is_a?(Class)
-        klass = object_or_klass
-        ivar = "@#{instance_variable_name_for(klass)}"
-        if instance = instance_variable_get(ivar)
-          warn "[WARNING] Using #{ivar} as the subject. Future versions " <<
-               "of Shoulda will require an explicit subject using the " <<
-               "subject class method. Add this after your setup to avoid " <<
-               "this warning: subject { #{ivar} }"
-          instance
-        else
-          klass.new
-        end
+        object_or_klass.new
       else
         object_or_klass
       end
@@ -352,12 +359,25 @@ module Shoulda
       self.teardown_blocks << blk
     end
 
-    def should(name, options = {}, &blk)
-      if block_given?
+    def should(name_or_matcher, options = {}, &blk)
+      if name_or_matcher.respond_to?(:description) && name_or_matcher.respond_to?(:matches?)
+        name = name_or_matcher.description
+        blk = lambda { assert_accepts name_or_matcher, subject }
+      else
+        name = name_or_matcher
+      end
+
+      if blk
         self.shoulds << { :name => name, :before => options[:before], :block => blk }
       else
        self.should_eventuallys << { :name => name }
      end
+    end
+
+    def should_not(matcher)
+      name = matcher.description
+      blk = lambda { assert_rejects matcher, subject }
+      self.shoulds << { :name => "not #{name}", :block => blk }
     end
 
     def should_eventually(name, &blk)
@@ -386,12 +406,20 @@ module Shoulda
       am_subcontext? ? parent.test_unit_class : parent
     end
 
+    def test_methods
+      @test_methods ||= Hash.new { |h,k|
+        h[k] = Hash[k.instance_methods.map { |n| [n, true] }]
+      }
+    end
+
     def create_test_from_should_hash(should)
       test_name = ["test:", full_name, "should", "#{should[:name]}. "].flatten.join(' ').to_sym
 
-      if test_unit_class.instance_methods.include?(test_name.to_s)
+      if test_methods[test_unit_class][test_name.to_s] then
         warn "  * WARNING: '#{test_name}' is already defined"
       end
+
+      test_methods[test_unit_class][test_name.to_s] = true
 
       context = self
       test_unit_class.send(:define_method, test_name) do

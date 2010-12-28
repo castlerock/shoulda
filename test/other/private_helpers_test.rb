@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), '..', 'test_helper')
+require 'test_helper'
 
 class PrivateHelpersTest < ActiveSupport::TestCase # :nodoc:
   include Shoulda::Private
@@ -22,7 +22,7 @@ class PrivateHelpersTest < ActiveSupport::TestCase # :nodoc:
         get_options!(args, :one)
       end
     end
-    
+
     should "return single wanted option" do
       args = [:a, :b, {:class => Object}]
       klass = get_options!(args,:class)

@@ -16,6 +16,7 @@ module Shoulda # :nodoc:
       # 'none@none.com' as one of the recipients.
       #
       def assert_sent_email
+      ::ActiveSupport::Deprecation.warn("use: should have_sent_email")
         emails = ::ActionMailer::Base.deliveries
         assert !emails.empty?, "No emails were sent"
         if block_given?
@@ -24,10 +25,13 @@ module Shoulda # :nodoc:
         end
       end
 
+      # should have_sent_email.with_subject(/hi there/).to('none@none.com').from('noreply@example.com').with_body(/reach out/)
+
       # Asserts that no ActionMailer mails were delivered
       #
       #  assert_did_not_send_email
       def assert_did_not_send_email
+        ::ActiveSupport::Deprecation.warn("use: should_not have_sent_email")
         msg = "Sent #{::ActionMailer::Base.deliveries.size} emails.\n"
         ::ActionMailer::Base.deliveries.each { |m| msg << "  '#{m.subject}' sent to #{m.to.to_sentence}\n" }
         assert ::ActionMailer::Base.deliveries.empty?, msg

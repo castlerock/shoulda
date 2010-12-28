@@ -1,8 +1,10 @@
-test/rails_root/log/*.log
+test/*/log/*.log
 doc
 coverage
 .svn/
 pkg
 *.swp
+*.swo
 tags
 TAGS
+tmp

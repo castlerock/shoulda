@@ -2,6 +2,8 @@ require 'shoulda/private_helpers'
 
 module Shoulda # :nodoc:
   module Macros
+    # Deprecated.
+    #
     # Macro that creates a test asserting a change between the return value
     # of a block that is run before and after the current setup block
     # is run. This is similar to Active Support's <tt>assert_difference</tt>
@@ -34,24 +36,33 @@ module Shoulda # :nodoc:
     #
     #   # Assert the value changed to "new:"
     #   should_change("the post title", :to => "new") { @post.title }
+    #
+    # This macro was deprecated because these tests aren't as valuable as
+    # alternative tests that explicitly test the final state.
+    #
+    # Consider an alternative:
+    #
+    #   context "updating a post" do
+    #     setup do
+    #       @post = Post.create(:title => "old")
+    #       put :update, :post => {:title => "new"}, :id => @post.to_param
+    #     end
+    #     should "update the title" do
+    #       assert_equal "new", @post.reload.title
+    #     end
+    #   end
     def should_change(description, options = {}, &block)
+      ::ActiveSupport::Deprecation.warn("Not considered a useful test. Instead, test the end state explicitly.")
       by, from, to = get_options!([options], :by, :from, :to)
       stmt = "change #{description}"
       stmt << " from #{from.inspect}" if from
       stmt << " to #{to.inspect}" if to
       stmt << " by #{by.inspect}" if by
 
-      if block_given?
-        code = block
-      else
-        warn "[DEPRECATION] should_change(expression, options) is deprecated. " <<
-             "Use should_change(description, options) { code } instead."
-        code = lambda { eval(description) }
-      end
-      before = lambda { @_before_should_change = code.bind(self).call }
+      before = lambda { @_before_should_change = block.bind(self).call }
       should stmt, :before => before do
         old_value = @_before_should_change
-        new_value = code.bind(self).call
+        new_value = block.bind(self).call
         assert_operator from, :===, old_value, "#{description} did not originally match #{from.inspect}" if from
         assert_not_equal old_value, new_value, "#{description} did not change" unless by == 0
         assert_operator to, :===, new_value, "#{description} was not changed to match #{to.inspect}" if to
@@ -59,6 +70,8 @@ module Shoulda # :nodoc:
       end
     end
 
+    # Deprecated.
+    #
     # Macro that creates a test asserting no change between the return value
     # of a block that is run before and after the current setup block
     # is run. This is the logical opposite of should_change.
@@ -71,21 +84,32 @@ module Shoulda # :nodoc:
     #     setup { @post.update_attributes(:title => "new") }
     #     should_not_change("the number of posts") { Post.count }
     #   end
+    #
+    # This macro was deprecated because these tests aren't as valuable as
+    # alternative tests that explicitly test the final state.
+    #
+    # Consider an alternative:
+    #
+    #   context "updating a post" do
+    #     setup do
+    #       @post = Post.create(:title => "old")
+    #       put :update, :post => {:title => ""}, :id => @post.to_param
+    #     end
+    #     should "not update the title" do
+    #       assert_equal "old", @post.reload.title
+    #     end
+    #   end
     def should_not_change(description, &block)
-      if block_given?
-        code = block
-      else
-        warn "[DEPRECATION] should_not_change(expression) is deprecated. " <<
-             "Use should_not_change(description) { code } instead."
-        code = lambda { eval(description) }
-      end
-      before = lambda { @_before_should_not_change = code.bind(self).call }
+      ::ActiveSupport::Deprecation.warn("Not considered a useful test. Instead, test the end state explicitly.")
+      before = lambda { @_before_should_not_change = block.bind(self).call }
       should "not change #{description}", :before => before do
-        new_value = code.bind(self).call
+        new_value = block.bind(self).call
         assert_equal @_before_should_not_change, new_value, "#{description} changed"
       end
     end
 
+    # Deprecated.
+    #
     # Macro that creates a test asserting that a record of the given class was
     # created.
     #
@@ -96,9 +120,12 @@ module Shoulda # :nodoc:
     #     should_create :post
     #   end
     def should_create(class_name)
+      ::ActiveSupport::Deprecation.warn
       should_change_record_count_of(class_name, 1, 'create')
     end
 
+    # Deprecated.
+    #
     # Macro that creates a test asserting that a record of the given class was
     # destroyed.
     #
@@ -109,6 +136,7 @@ module Shoulda # :nodoc:
     #     should_destroy :post
     #   end
     def should_destroy(class_name)
+      ::ActiveSupport::Deprecation.warn
       should_change_record_count_of(class_name, -1, 'destroy')
     end
 
