@@ -201,6 +201,15 @@ module Shoulda
       end
     end
 
+    def fast_context(name, &blk)
+      if Shoulda.current_context
+        Shoulda.current_context.context(name,&blk)
+      else
+        context = Shoulda::FastContext.new(name,self,&blk)
+        context.build
+      end
+    end
+
     # Returns the class being tested, as determined by the test class name.
     #
     #   class UserTest; described_type; end
@@ -351,6 +360,10 @@ module Shoulda
       self.subcontexts << Context.new(name, self, &blk)
     end
 
+    def fast_context(name,&blk)
+      self.subcontexts << FastContext.new(name,self,&blk)
+    end
+
     def setup(count = :each,&blk)
       self.setup_blocks << Setup.new(count,&blk)
     end
@@ -399,7 +412,7 @@ module Shoulda
     end
 
     def am_subcontext?
-      parent.is_a?(self.class) # my parent is the same class as myself.
+      parent.is_a?(self.class) || self.class < parent.class # my parent is the same class as myself.
     end
 
     def test_unit_class
@@ -480,4 +493,45 @@ module Shoulda
     end
 
   end
+
+  class FastContext < Context
+    def build
+      run_current_should_blocks
+      subcontexts.each { |context| context.build }
+
+      print_should_eventuallys
+    end #end of method build
+
+    def run_current_should_blocks
+      test_name = ["test:", full_name].flatten.join(' ').to_sym
+
+      if test_unit_class.instance_methods.include?(test_name.to_s)
+        warn "  * WARNING: '#{test_name}' is already defined"
+      end
+      
+      context = self
+      all_shoulds = shoulds
+      test_unit_class.send(:define_method, test_name) do
+        @shoulda_context = context
+        @current_should = nil
+        begin
+          context.run_parent_setup_blocks(self)
+          all_shoulds.each {|should| 
+            @current_should = should
+            should[:before].bind(self).call if should[:before] 
+          }
+          context.run_current_setup_blocks(self)
+          all_shoulds.each do |should|
+            should[:block].bind(self).call
+          end
+        rescue Test::Unit::AssertionFailedError => e
+          error = Test::Unit::AssertionFailedError.new(["FAILED:", context.full_name, "should", "#{@current_should[:name]}:", e.message].flatten.join(' '))
+          error.set_backtrace e.backtrace
+          raise error
+        ensure
+          context.run_all_teardown_blocks(self)
+        end
+      end
+    end # end of method run_current_should_blocks
+  end #end of class FastContext
 end
