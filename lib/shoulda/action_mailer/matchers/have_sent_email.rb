@@ -41,7 +41,7 @@ module Shoulda # :nodoc:
           self
         end
 
-        def matches?(subject)
+        def matches?(subject=nil)
           ::ActionMailer::Base.deliveries.each do |mail|
             @subject_failed = !regexp_or_string_match(mail.subject, @email_subject) if @email_subject
             @body_failed = !regexp_or_string_match(mail.body, @body) if @body
